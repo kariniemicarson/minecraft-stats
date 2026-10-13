@@ -2,11 +2,9 @@ const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { DatabaseSync } = require("node:sqlite");
 const path = require("node:path");
 const { execFile } = require("node:child_process");
-const { opendir } = require("node:fs");
-const { resourceLimits } = require("node:worker_threads");
 
 function createWindow() {
-  const win = new BrowserWindow({
+  const win = new BrowserWindow({ // Create window
     width: 1200,
     height: 800,
     webPreferences: {
@@ -16,7 +14,7 @@ function createWindow() {
     }
   });
 
-  const minecraftPath = path.join(
+  const minecraftPath = path.join( // path for Minecraft folder
     app.getPath("appData"),
     ".minecraft",
     "saves"
@@ -24,7 +22,7 @@ function createWindow() {
 
   win.loadURL("http://localhost:5173");
 
-  win.webContents.once("did-finish-load", async () => {
+  win.webContents.once("did-finish-load", async () => { // auto-open minecraft worlds folder upon boot-up
   
     const result = await dialog.showOpenDialog(win, {
     title: "Select Minecraft Stats Folder",
@@ -40,23 +38,10 @@ function createWindow() {
 
 app.whenReady().then(() => {
 
-  ipcMain.handle("select-stats-folder", async () => {
-    const result = await dialog.showOpenDialog({
-      title: "Pick Statistics Folder",
-      properties: ["openDirectory"]
-    });
-
-    if (result.canceled) {
-      return null;
-    }
-
-    return result.filePaths[0];
-  });
-
-  ipcMain.handle("import-stats", async (_event, folderPath) => {
+  ipcMain.handle("import-stats", async (_event, folderPath) => { // using stats_extract.py to import stats to db
   const scriptPath = path.join(app.getAppPath(), "python", "stats_extract.py");
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve, reject) => { // Promise to open the file once selected
     execFile(
       "python",
       [scriptPath, folderPath],
@@ -74,7 +59,7 @@ app.whenReady().then(() => {
   });
 });
 
-  ipcMain.handle("get-stats", () => {
+  ipcMain.handle("get-stats", () => { // getting stats from the db and displaying them
     const dbPath = path.join(app.getAppPath(), "minecraft_stats.db");
     const db = new DatabaseSync(dbPath);
 
@@ -88,11 +73,16 @@ app.whenReady().then(() => {
     } finally {
       db.close();
     }
-  });
+});
+
+  ipcMain.handle("restart", () => { // restart the app
+    app.relaunch();
+    app.quit();
+});
 
   createWindow();
 });
 
-app.on("window-all-closed", () => {
+app.on("window-all-closed", () => { // shut down app if window is closed
   if (process.platform !== "darwin") app.quit();
 });

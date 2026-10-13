@@ -50,8 +50,8 @@ function App() {
     <div style={{ padding: "30px" }}>
       <h1>Minecraft Statistics</h1>
 
-      <button onClick={selectFolder} disabled={loading}>
-        Select Stats Folder
+      <button onClick={() => window.minecraftAPI.restartApp()} disabled={loading}>
+        Restart App
       </button>
 
       {loading && <p>Importing statistics...</p>}

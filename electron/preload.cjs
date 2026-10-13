@@ -3,16 +3,15 @@ const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("minecraftAPI", {
   getStats: () => ipcRenderer.invoke("get-stats"),
 
-  selectStatsFolder: () => ipcRenderer.invoke("select-stats-folder"),
-
-  importStats: (folderPath) =>
-    ipcRenderer.invoke("import-stats", folderPath),
+  importStats: (folderPath) => ipcRenderer.invoke("import-stats", folderPath),
   
   onStatsFolderSelected: (callback) => {
     ipcRenderer.on("stats-folder-selected", (_event, folder) => {
       callback(folder);
     });
-  }
+  },
+
+  restartApp: () => ipcRenderer.invoke("restart"),
 
   //next ones here
 });
