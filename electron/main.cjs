@@ -4,6 +4,7 @@ const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { DatabaseSync } = require("node:sqlite");
 const path = require("node:path");
 const { execFile } = require("node:child_process");
+const usernameCache = new Map();
 
 function createWindow() {
   const win = new BrowserWindow({ // Create window
@@ -38,7 +39,37 @@ function createWindow() {
 });
 }
 
-app.whenReady().then(() => { // ready-to-go functions in the app
+
+async function getMinecraftUsername(uuid) {
+  try {
+    const response = await fetch(
+      `https://api.minecraftservices.com/minecraft/profile/lookup/${uuid}`
+    );
+
+    console.log("Looking up UUID:", uuid);
+    console.log("API status:", response.status);
+
+    if (!response.ok) {
+      console.log("Lookup failed for:", uuid);
+      return uuid;
+    }
+
+    const data = await response.json();
+
+    console.log("Username found:", data.name);
+
+    return data.name;
+  } catch (error) {
+    console.error("Minecraft API error:", error);
+    return uuid;
+  }
+}
+
+
+
+// ready-to-go functions in the app
+
+app.whenReady().then(() => {
 
   ipcMain.handle("import-stats", async (_event, folderPath) => { // using stats_extract.py to import stats to db
   const scriptPath = path.join(app.getAppPath(), "python", "stats_extract.py");
@@ -61,17 +92,36 @@ app.whenReady().then(() => { // ready-to-go functions in the app
   });
 });
 
-  ipcMain.handle("get-stats", () => { // getting stats from the db and displaying them
+  ipcMain.handle("get-stats", async () => { // getting stats from the db and displaying them
     const dbPath = path.join(app.getAppPath(), "minecraft_stats.db");
     const db = new DatabaseSync(dbPath);
 
+    const usernames = new Map();
+
     try {
-      return db.prepare(`
+      const stats = db.prepare(`
         SELECT player_uuid, category, statistic, value
         FROM player_stats
         ORDER BY value DESC
         LIMIT 100
       `).all();
+
+    const uuids = new Set(
+      stats.map(stat => stat.player_uuid)
+    );
+
+    const usernames = new Map();
+
+    for (const uuid of uuids) {
+      const username = await getMinecraftUsername(uuid);
+      usernames.set(uuid, username);
+    }
+
+    return stats.map(stat => ({
+      ...stat,
+      player_name: usernames.get(stat.player_uuid)
+    }));
+
     } finally {
       db.close();
     }

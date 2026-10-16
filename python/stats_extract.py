@@ -7,8 +7,8 @@ import sys
 from pathlib import Path
 
 # function for getting stats from a world
-def extract_stats(stats_folder):
-    stats_path = Path(stats_folder)
+def extract_stats(world_folder):
+    stats_path = Path(world_folder) / "players" / "stats"
 
     # Verify the folder exists
     if not stats_path.is_dir():
@@ -40,7 +40,7 @@ def extract_stats(stats_folder):
     # Remove stats from prev world, try import new one
     try:
         cursor.execute("DELETE FROM player_stats")
-        import_stats(stats_folder, cursor, conn)
+        import_stats(world_folder, cursor, conn)
 
     except Exception as e:
         conn.rollback()
@@ -51,9 +51,9 @@ def extract_stats(stats_folder):
         conn.close()
 
 # function for moving stats from a world into the db
-def import_stats(stats_folder, cursor, conn):
-
-    stats_path = Path(stats_folder)
+def import_stats(world_folder, cursor, conn):
+    
+    stats_path = Path(world_folder) / "players" / "stats"
     
     # Find all player statistics files
     files = list(stats_path.glob("*.json"))
@@ -81,7 +81,7 @@ def import_stats(stats_folder, cursor, conn):
 # main function
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        print("Usage: python stats_extract.py <stats_folder>")
+        print("Usage: python stats_extract.py <world_folder>")
         sys.exit(1)
 
     extract_stats(sys.argv[1])

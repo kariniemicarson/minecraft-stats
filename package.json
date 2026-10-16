@@ -13,8 +13,11 @@
     "start": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && npm run electron\""
   },
   "dependencies": {
+    "echarts": "^6.1.0",
+    "echarts-for-react": "^3.0.6",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-select": "^5.10.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

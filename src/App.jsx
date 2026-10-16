@@ -1,14 +1,44 @@
 // Frondend Controller //
 
 import { useEffect, useState } from "react";
+import Select from "react-select";
+import ReactECharts from "echarts-for-react"
 
 function App() {
   const [folder, setFolder] = useState("");
   const [stats, setStats] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedStat, setSelectedStat] = useState(null);
 
-  async function importFolder(selectedFolder) {
+  const categoryOptions = [ // category search bar
+    ...new Set(stats.map(stat => stat.category))
+      ].sort().map(category => ({
+        value: category,
+        label: category.replace("minecraft:", "").replaceAll("_", " ")
+  }));
+
+  const statOptions = [ // stat search bar
+  ...new Set(
+    stats
+      .filter(stat =>
+        !selectedCategory || stat.category === selectedCategory.value
+      )
+      .map(stat => stat.statistic)
+  )
+].sort().map(statistic => ({
+  value: statistic,
+  label: statistic.replace("minecraft:", "").replaceAll("_", " ")
+}));
+
+  const filteredStats = stats.filter(stat => 
+    (!selectedCategory || stat.category === selectedCategory.value) &&
+    (!selectedStat || stat.statistic === selectedStat.value)
+  );
+
+  
+  async function importFolder(selectedFolder) { // import folder function
     setLoading(true);
     setError("");
 
@@ -62,16 +92,42 @@ function App() {
 
       {folder && (
         <p>
-          Current world: {folder.replace(/[\\/]+$/, "").split(/[\\/]/).at(-3)}
+          Current world: {folder.split(/[\\/]/).filter(Boolean).at(-1)}
         </p>
       )}
 
       <p>Loaded {stats.length} statistics</p>
 
+      <div className="category-selector">
+        <Select
+          options={categoryOptions}
+          value={selectedCategory}
+          onChange={setSelectedCategory}
+          placeholder="Search categories..."
+          isSearchable
+          isClearable
+        />
+      </div>
+
+      <div className="statistic-selector">
+        <label htmlFor="statistic-select">Statistic</label>
+
+        <Select
+          inputId="statistic-select"
+          options={statOptions}
+          value={selectedStat}
+          onChange={setSelectedStat}
+          placeholder="Search statistics..."
+          isSearchable
+          isClearable
+          isDisabled={!selectedCategory}
+        />
+      </div>
+      
       <table>
         <thead>
           <tr>
-            <th>Player UUID</th>
+            <th>Player</th>
             <th>Category</th>
             <th>Statistic</th>
             <th>Value</th>
@@ -79,11 +135,11 @@ function App() {
         </thead>
 
         <tbody>
-          {stats.map((stat) => (
+          {filteredStats.map((stat) => (
             <tr
               key={`${stat.player_uuid}-${stat.category}-${stat.statistic}`}
             >
-              <td>{stat.player_uuid}</td>
+              <td>{stat.player_name}</td>
               <td>{stat.category}</td>
               <td>{stat.statistic}</td>
               <td>{stat.value}</td>
