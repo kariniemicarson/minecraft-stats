@@ -1,7 +1,9 @@
+// Bridge between App.jsx and main.cjs //
+
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("minecraftAPI", {
-  getStats: () => ipcRenderer.invoke("get-stats"),
+  getStats: () => ipcRenderer.invoke("get-stats"), // 
 
   importStats: (folderPath) => ipcRenderer.invoke("import-stats", folderPath),
   

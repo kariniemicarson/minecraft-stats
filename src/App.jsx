@@ -1,3 +1,5 @@
+// Frondend Controller //
+
 import { useEffect, useState } from "react";
 
 function App() {
@@ -24,7 +26,7 @@ function App() {
     }
   }
 
-  async function selectFolder() {
+  async function selectFolder() { // function for selecting a folder
     try {
       const selectedFolder =
         await window.minecraftAPI.selectStatsFolder();
@@ -37,7 +39,7 @@ function App() {
     }
   }
 
-  useEffect(() => {
+  useEffect(() => { //listener for user selecting a folder
     const unsubscribe =
       window.minecraftAPI.onStatsFolderSelected((selectedFolder) => {
         importFolder(selectedFolder);
@@ -46,8 +48,8 @@ function App() {
     return unsubscribe;
   }, []);
 
-  return (
-    <div style={{ padding: "30px" }}>
+  return ( // App Display
+    <div className="app">
       <h1>Minecraft Statistics</h1>
 
       <button onClick={() => window.minecraftAPI.restartApp()} disabled={loading}>
@@ -56,7 +58,7 @@ function App() {
 
       {loading && <p>Importing statistics...</p>}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
 
       {folder && (
         <p>

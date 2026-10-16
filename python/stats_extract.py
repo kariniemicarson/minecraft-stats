@@ -1,4 +1,6 @@
-#imports
+# Initial Data Processing #
+
+# imports
 import json
 import sqlite3
 import sys

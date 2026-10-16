@@ -1,3 +1,5 @@
+// Backend Controller //
+
 const { app, BrowserWindow, ipcMain, dialog } = require("electron");
 const { DatabaseSync } = require("node:sqlite");
 const path = require("node:path");
@@ -36,7 +38,7 @@ function createWindow() {
 });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(() => { // ready-to-go functions in the app
 
   ipcMain.handle("import-stats", async (_event, folderPath) => { // using stats_extract.py to import stats to db
   const scriptPath = path.join(app.getAppPath(), "python", "stats_extract.py");
