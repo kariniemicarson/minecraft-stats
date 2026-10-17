@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Select from "react-select";
-import ReactECharts from "echarts-for-react"
+import ReactECharts from "echarts-for-react";
+import "./App.css";
 
 function App() {
   const [folder, setFolder] = useState("");
@@ -11,6 +12,7 @@ function App() {
   const [error, setError] = useState("");
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedStat, setSelectedStat] = useState(null);
+  const [chartData, setChartData] = useState(null);
 
   const categoryOptions = [ // category search bar
     ...new Set(stats.map(stat => stat.category))
@@ -27,18 +29,15 @@ function App() {
       )
       .map(stat => stat.statistic)
   )
-].sort().map(statistic => ({
+  ].sort().map(statistic => ({
   value: statistic,
   label: statistic.replace("minecraft:", "").replaceAll("_", " ")
-}));
+  }));
 
-  const filteredStats = stats.filter(stat => 
-    (!selectedCategory || stat.category === selectedCategory.value) &&
-    (!selectedStat || stat.statistic === selectedStat.value)
-  );
-
-  
   async function importFolder(selectedFolder) { // import folder function
+    setChartData(null);
+    setSelectedCategory(null);
+    setSelectedStat(null);
     setLoading(true);
     setError("");
 
@@ -56,18 +55,95 @@ function App() {
     }
   }
 
-  async function selectFolder() { // function for selecting a folder
-    try {
-      const selectedFolder =
-        await window.minecraftAPI.selectStatsFolder();
+  
+  function handleSearch() { // Search bar functionality
+    if (!selectedCategory || !selectedStat) { return; }
 
-      if (selectedFolder) {
-        await importFolder(selectedFolder);
-      }
-    } catch (err) {
-      setError(err.message);
+    const statistic = selectedStat.value;
+
+    let divisor = 1;
+
+    if (statistic.includes("damage")) {
+      divisor = 20; // Damage to hearts
+    } else if (statistic.endsWith("_one_cm")) {
+      divisor = 100; // Centimeters to blocks
     }
+
+    const results = stats
+      .filter(stat =>
+        stat.category === selectedCategory.value &&
+        stat.statistic === statistic).map(stat => ({
+          ...stat,
+          value: stat.value / divisor
+        })).sort((a, b) => b.value - a.value);
+
+    setChartData({
+      category: selectedCategory.label,
+      statistic: selectedStat.label,
+      unit: divisor === 20 ? "hearts" : divisor === 100 ? "blocks" : "",
+      results: results
+    });
   }
+
+  
+  const chartOptions = chartData ? {
+    backgroundColor: "transparent",
+
+    title: {
+      text: `${chartData.statistic}${chartData.unit ? ` (${chartData.unit})` : ""} Leaderboard`,
+      textStyle: {
+        color: "#ffffff"
+      }
+    },
+
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "shadow"
+      }
+    },
+
+    grid: {
+      left: 130,
+      right: 50,
+      top: 65,
+      bottom: 40
+    },
+
+    xAxis: {
+      type: "value",
+      min: 0,
+      axisLabel: {
+        color: "#cccccc"
+      }
+    },
+
+    yAxis: {
+      type: "category",
+      inverse: true,
+      data: chartData.results.map(stat => stat.player_name),
+      axisLabel: {
+        color: "#ffffff"
+      }
+    },
+
+    series: [{
+      name: chartData.statistic,
+      type: "bar",
+      data: chartData.results.map(stat => stat.value),
+      itemStyle: {
+        color: "#55aa55"
+      },
+      label: {
+        show: true,
+        position: "right",
+        color: "#ffffff",
+        formatter: (params) => `${params.value} ${chartData.unit}`
+      }
+    }]
+  } : null;
+
+
 
   useEffect(() => { //listener for user selecting a folder
     const unsubscribe =
@@ -80,7 +156,7 @@ function App() {
 
   return ( // App Display
     <div className="app">
-      <h1>Minecraft Statistics</h1>
+      <h1>Minecraft Statistics{folder && `: ${folder.split(/[\\/]/).filter(Boolean).at(-1)}`}</h1>
 
       <button onClick={() => window.minecraftAPI.restartApp()} disabled={loading}>
         Restart App
@@ -90,20 +166,20 @@ function App() {
 
       {error && <p className="error">{error}</p>}
 
-      {folder && (
-        <p>
-          Current world: {folder.split(/[\\/]/).filter(Boolean).at(-1)}
-        </p>
-      )}
-
       <p>Loaded {stats.length} statistics</p>
 
       <div className="category-selector">
+        <label htmlFor="category-select">Category</label>
+
         <Select
           options={categoryOptions}
           value={selectedCategory}
-          onChange={setSelectedCategory}
-          placeholder="Search categories..."
+          onChange={(category) => {
+            setSelectedCategory(category);
+            setSelectedStat(null);
+          }}
+          classNamePrefix="react-select"
+          placeholder="Search categories:"
           isSearchable
           isClearable
         />
@@ -117,36 +193,36 @@ function App() {
           options={statOptions}
           value={selectedStat}
           onChange={setSelectedStat}
-          placeholder="Search statistics..."
+          classNamePrefix="react-select"
+          placeholder="Search statistics:"
           isSearchable
           isClearable
           isDisabled={!selectedCategory}
         />
       </div>
-      
-      <table>
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>Category</th>
-            <th>Statistic</th>
-            <th>Value</th>
-          </tr>
-        </thead>
 
-        <tbody>
-          {filteredStats.map((stat) => (
-            <tr
-              key={`${stat.player_uuid}-${stat.category}-${stat.statistic}`}
-            >
-              <td>{stat.player_name}</td>
-              <td>{stat.category}</td>
-              <td>{stat.statistic}</td>
-              <td>{stat.value}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <button onClick={handleSearch} disabled={loading || !selectedCategory || !selectedStat} >Search</button>
+      
+      
+      <div className="chart-container">
+        {chartData ? (
+          chartData.results.length > 0 ? (
+            <ReactECharts
+              option={chartOptions}
+              style={{
+                height: `${Math.max(350, chartData.results.length * 55)}px`,
+                width: "100%"
+              }}
+              notMerge={true}
+            />
+          ) : (
+            <p>No statistics found for this selection.</p>
+          )
+        ) : (
+          <p>Select a category and statistic, then click Search.</p>
+        )}
+      </div>
+
     </div>
   );
 }

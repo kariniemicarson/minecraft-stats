@@ -39,15 +39,11 @@ function createWindow() {
 });
 }
 
-
-async function getMinecraftUsername(uuid) {
+async function getMinecraftUsername(uuid) { // API call
   try {
     const response = await fetch(
       `https://api.minecraftservices.com/minecraft/profile/lookup/${uuid}`
     );
-
-    console.log("Looking up UUID:", uuid);
-    console.log("API status:", response.status);
 
     if (!response.ok) {
       console.log("Lookup failed for:", uuid);
@@ -56,15 +52,12 @@ async function getMinecraftUsername(uuid) {
 
     const data = await response.json();
 
-    console.log("Username found:", data.name);
-
     return data.name;
   } catch (error) {
     console.error("Minecraft API error:", error);
     return uuid;
   }
 }
-
 
 
 // ready-to-go functions in the app
@@ -103,7 +96,6 @@ app.whenReady().then(() => {
         SELECT player_uuid, category, statistic, value
         FROM player_stats
         ORDER BY value DESC
-        LIMIT 100
       `).all();
 
     const uuids = new Set(
